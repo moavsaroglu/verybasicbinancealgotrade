@@ -1,0 +1,40 @@
+pip install python-binance
+from binance import Client
+import pandas as pd
+api_key = ""
+api_secret = ""
+client = Client(api_key,api_secret)
+pd.DataFrame(client.get_historical_klines("BTCUSDT","1m","30"))
+def getminutedata(symbol,interval,lookback):
+    frame = pd.DataFrame(client.get_historical_klines(symbol,interval,lookback + "min ago UTC"))
+    frame = frame.iloc[:,:6]
+    frame.columns = ["Time","Open","High","Low","Close","Volume"] 
+    frame = frame.set_index("Time")
+    frame.index = pd.to_datetime(frame.index, unit="ms")
+    frame = frame.astype(float)
+    return frame
+test = getminutedata('BTCUSDT',"1m","30")
+print(test)
+def strategytest(symbol,qty,entired=False):
+    test = getminutedata(symbol,"1m","30")
+    cumulret = (test.Open.pct_change()+1).cumprod()- 1
+    if not entired:
+        if cumulret[-1] < -0.002:
+            order= client.create_order(symbol=symbol,side = "BUY",type = "MARKET",quantity = qty)
+            
+            print(order)
+            entired = True
+        else:
+            print("No Trade")
+    if entired:
+        while True:
+            test = getminutedata(symbol,"1m","30m")
+            sincebuy = df.loc[df.index > pd.to_datetime(order["transactTime"], unit="ms ")]
+            if len(sincebuy)> 0:
+                sincebuyret = (sincebuy.Open.pct_change()+1).cumprod() - 1
+                if sincebuyret[-1]> 0.00030 or sincebuyret[-1]< 0.00010:
+                    order= client.create_order(symbol=symbol,side = "BUY",type = "MARKET",quantity = qtv)
+                    
+                    print(order)
+                    break
+strategytest("BTCUSDT",0.001)
